@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Anime Pulls 🎀</title>
+<style>
+body {
+    margin:0;
+    font-family: Arial;
+    background: linear-gradient(135deg, #1a001f, #3b0a45);
+    color:white;
+    text-align:center;
+}
+header {
+    padding: 20px;
+    font-size:28px;
+    background:#ff4da6;
+    box-shadow:0 0 15px #ff4da6;
+}
+.balance {
+    margin:15px;
+    font-size:22px;
+}
+#slot-container {
+    display:flex;
+    justify-content:center;
+    gap:15px;
+    margin-top:30px;
+}
+.reel {
+    width:80px;
+    height:120px;
+    overflow:hidden;
+    border:3px solid #ff4da6;
+    border-radius:15px;
+    background:#2a0033;
+    box-shadow:0 0 15px #ff4da6;
+    position:relative;
+}
+.symbols {
+    position:absolute;
+    width:100%;
+    text-align:center;
+    font-size:40px;
+    line-height:120px;
+}
+.spinning {
+    animation: pulse 0.6s infinite alternate;
+    box-shadow:0 0 10px #ff4da6,0 0 20px #ff4da6,0 0 40px #ff4da6;
+}
+@keyframes pulse {
+    from {transform:scale(1); box-shadow:0 0 10px #ff4da6;}
+    to {transform:scale(1.05); box-shadow:0 0 30px #ff4da6;}
+}
+button {
+    margin:10px;
+    padding:12px 25px;
+    border:none;
+    border-radius:10px;
+    background:#ff4da6;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+button:hover {
+    transform:scale(1.1);
+}
+.shop, .owned {margin-top:30px;}
+.girls {display:flex; justify-content:center; flex-wrap:wrap; gap:15px; margin-top:15px;}
+.card {background:#2a0033; padding:10px; border-radius:15px; width:140px; box-shadow:0 0 10px pink;}
+.card img {width:100%; border-radius:10px;}
+</style>
+</head>
+<body>
+
+<header>🎀 Baddie Gamling 🎰</header>
+<div class="balance">💰 Coins: <span id="coins">0</span></div>
+
+<div id="slot-container">
+    <div class="reel" id="reel1"></div>
+    <div class="reel" id="reel2"></div>
+    <div class="reel" id="reel3"></div>
+</div>
+
+<button onclick="spin()">Spin 🎰</button>
+<div id="result"></div>
+
+<div class="shop">
+    <h2>Baddie Shop</h2>
+    <div class="girls" id="shop"></div>
+</div>
+
+<div class="owned">
+    <h2>Baddie Collection</h2>
+    <div class="girls" id="collection"></div>
+</div>
+
+<script>
+let coins = 0;
+let spinning = false;
+const symbols = ["⭐","💎","🔥","🍀"];
+const girls = [
+    {name:"Zero Two", price:300, img:"https://i.imgur.com/0Dpi6ed.jpeg"},
+    {name:"Mei Mei", price:500, img:"https://i.pinimg.com/736x/6a/6d/e4/6a6de46cbdbccdd65a96fbefa42a72b2.jpg"},
+    {name:"Maki", price:1000, img:"https://i.imgur.com/4LdzGgq.jpeg"},
+    {name:"Anko", price:2500, img:"https://preview.redd.it/detective-anko-fan-art-by-gyunzai-call-of-the-night-v0-8bdupkuibhp91.jpg?auto=webp&s=29cfd452d9f56a5b78a528230933d4ab15c06e6b"},
+    {name:"Astolfo", price:5000, img:"https://i.imgur.com/hjwSd8T.jpeg"}
+
+];
+let owned = [];
+
+// ----- SAVE / LOAD -----
+function saveGame(){
+    localStorage.setItem("coins", coins);
+    localStorage.setItem("owned", JSON.stringify(owned));
+}
+
+function loadGame(){
+    let savedCoins = localStorage.getItem("coins");
+    let savedOwned = localStorage.getItem("owned");
+    if(savedCoins !== null) coins=parseInt(savedCoins);
+    if(savedOwned !== null) owned=JSON.parse(savedOwned);
+    document.getElementById("coins").innerText=coins;
+}
+
+// ----- REEL SYSTEM -----
+function createReelSymbols(){
+    let content="";
+    for(let i=0;i<20;i++){
+        let rand=symbols[Math.floor(Math.random()*symbols.length)];
+        content+=`<div>${rand}</div>`;
+    }
+    return content;
+}
+
+function spinReel(reelId,duration){
+    return new Promise(resolve=>{
+        const reel=document.getElementById(reelId);
+        reel.classList.add("spinning");
+        reel.innerHTML=`<div class="symbols">${createReelSymbols()}</div>`;
+        const symbolsDiv=reel.querySelector(".symbols");
+        let position=0;
+        let interval=setInterval(()=>{
+            position+=20;
+            symbolsDiv.style.transform=`translateY(-${position}px)`;
+        },20);
+        setTimeout(()=>{
+            clearInterval(interval);
+            let final=symbols[Math.floor(Math.random()*symbols.length)];
+            reel.innerHTML=`<div class="symbols"><div>${final}</div></div>`;
+            reel.classList.remove("spinning");
+            resolve(final);
+        },duration);
+    });
+}
+
+async function spin(){
+    if(spinning) return;
+    spinning=true;
+
+    const r1=spinReel("reel1",1200);
+    const r2=spinReel("reel2",1600);
+    const r3=spinReel("reel3",2000);
+
+    const s1=await r1;
+    const s2=await r2;
+    const s3=await r3;
+
+    finishSpin(s1,s2,s3);
+    spinning=false;
+}
+
+// ----- FINISH SPIN -----
+function finishSpin(s1,s2,s3){
+    let reward=Math.floor(Math.random()*25)+15;
+    if(s1===s2 && s2===s3){
+        reward+=350;
+        document.getElementById("result").innerText="JACKPOT!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1 🔥";
+    } else {
+        document.getElementById("result").innerText="Nice spin nga";
+    }
+    coins+=reward;
+    document.getElementById("coins").innerText=coins;
+    saveGame();
+}
+
+// ----- SHOP -----
+function renderShop(){
+    let shopDiv=document.getElementById("shop");
+    shopDiv.innerHTML="";
+    girls.forEach((girl,index)=>{
+        let card=document.createElement("div");
+        card.className="card";
+        card.innerHTML=`
+            <img src="${girl.img}">
+            <h4>${girl.name}</h4>
+            <p>${girl.price} coins</p>
+            <button onclick="buyGirl(${index})">Buy</button>
+        `;
+        shopDiv.appendChild(card);
+    });
+}
+
+function buyGirl(index){
+    let girl=girls[index];
+    if(coins<girl.price){
+        alert("Not enough coins 😭");
+        return;
+    }
+    coins-=girl.price;
+    owned.push(girl);
+    document.getElementById("coins").innerText=coins;
+    saveGame();
+    renderCollection();
+}
+
+// ----- COLLECTION -----
+function renderCollection(){
+    let colDiv=document.getElementById("collection");
+    colDiv.innerHTML="";
+    owned.forEach(girl=>{
+        let card=document.createElement("div");
+        card.className="card";
+        card.innerHTML=`<img src="${girl.img}"><h4>${girl.name}</h4>`;
+        colDiv.appendChild(card);
+    });
+}
+
+// ----- INIT -----
+loadGame();
+renderShop();
+renderCollection();
+</script>
+</body>
+</html>
